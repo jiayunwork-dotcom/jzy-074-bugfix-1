@@ -190,6 +190,28 @@ test('多层方案：总透射率先求和再取指数，与逐层相乘的近�
   assert.notEqual(res.json().narrowBeamTransmission, productOfLayers);
 });
 
+test('多层方案 linear 积累因子按总光学深度代入（接口级回归）', async () => {
+  // 各层衰减系数差异大：错误算法（最外层 mu × 总厚度）会给出 2.2，正确结果为 6
+  await post('/plans', {
+    name: 'multi-linear-buildup',
+    layers: [
+      { mu: 10, x: 0.1 },
+      { mu: 50, x: 0.2 },
+      { mu: 5, x: 0.3 },
+    ],
+    buildup: { mode: 'linear', coefficient: 0.4 },
+  });
+  const res = await post('/plans/multi-linear-buildup/compute', { fluenceRate: 1 });
+  assert.equal(res.statusCode, 200);
+  const body = res.json();
+  const depth = 10 * 0.1 + 50 * 0.2 + 5 * 0.3; // 12.5
+  const B = 1 + 0.4 * depth; // 6
+  assert.equal(body.opticalDepth, depth);
+  assert.equal(body.buildupFactor, B);
+  assert.equal(body.narrowBeamTransmission, Math.exp(-depth));
+  assert.equal(body.broadBeamTransmission, B * Math.exp(-depth));
+});
+
 test('宽束始终不小于窄束（接口级抽查）', async () => {
   for (const coefficient of [0, 0.5, 2]) {
     const res = await post('/compute/single', {

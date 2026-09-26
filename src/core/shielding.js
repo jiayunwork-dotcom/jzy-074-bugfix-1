@@ -6,9 +6,10 @@
  *
  * 物理模型：
  *  - 窄束透射率  T_narrow = exp(-sum(mu_i * x_i))，多层先把 mu*x 逐层累加再统一取指数；
- *  - 宽束透射率  T_broad  = B * T_narrow，B 为积累因子（>= 1），
- *    多层时 B 取最外层（靠近探测器一侧）材料对应的值：
- *    fixed 模式直接用给定值；linear 模式用最外层 mu 与屏蔽总厚度估算；
+ *  - 宽束透射率  T_broad  = B * T_narrow，B 为积累因子（>= 1）：
+ *    fixed 模式直接用给定值；linear 模式 B = 1 + k * D，D 为各层 mu*x
+ *    逐层求和得到的总光学深度（与窄束取指数用的是同一个量），
+ *    不能用某一层单独的 mu 去乘全部层加起来的总厚度；
  *  - 半值层 HVL = ln2/mu、十值层 TVL = ln10/mu，只由衰减系数决定；
  *    多层方案另给出按厚度加权有效衰减系数 mu_eff 估算的 HVL/TVL；
  *  - 相对剂量率 = 有屏蔽 / 无屏蔽剂量率之比 = 总透射率（含积累修正）。
@@ -39,10 +40,9 @@ function computeShielding(rawLayers, options = {}) {
   const depth = multilayer.opticalDepth(layers);
   const narrow = Math.exp(-depth);
 
-  // 积累因子取最外层材料对应的值
-  const outerLayer = layers[layers.length - 1];
   const thickness = multilayer.totalThickness(layers);
-  const B = buildupFactor(buildup, outerLayer.mu, thickness);
+  // 线性积累因子与窄束共用同一个总光学深度：B = 1 + k * sum(mu_i * x_i)
+  const B = buildupFactor(buildup, depth);
 
   const warnings = [];
   let broad = B * narrow;
