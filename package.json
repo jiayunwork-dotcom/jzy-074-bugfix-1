@@ -1,0 +1,19 @@
+{
+  "name": "shielding-service",
+  "version": "1.0.0",
+  "description": "Radiation shielding transmission service: narrow-beam / broad-beam models, HVL/TVL, multi-layer stacks, named reusable plans",
+  "private": true,
+  "type": "commonjs",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test test/"
+  },
+  "engines": {
+    "node": ">=20 <21"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "fastify": "^5.0.0"
+  }
+}
